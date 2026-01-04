@@ -1,2 +1,3 @@
-kakak_kau 67 1
-kimchi 87 0
+kilau 100 2
+gur 100 1
+gurhana 98 1
