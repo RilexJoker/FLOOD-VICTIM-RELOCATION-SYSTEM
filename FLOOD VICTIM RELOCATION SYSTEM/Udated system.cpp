@@ -2,542 +2,375 @@
 #include<fstream>
 #include<string>
 #include<iomanip>
-#include <vector>
+
 using namespace std;
 
-string ppsname[100];
-string ppsbil[100];
+struct Center {
+    string name;
+    int capacity;
+    int current;
+};
+
+Center ppsList[100];
+int totalPPS = 0;
 
 void menu();
 void victim();
 void adminGateway();
 void adminMenu();
-void adminLogin();
+bool adminLogin();
 void adminRegistration();
 void addpps();
 void summary();
 void viewVictims();
 void searchVictim();
 
-struct Center {
-	string name;
-	int capacity;
-	int current;
-};
-
 int main() {
-	int choice;
-	do {
-		menu();
-		cin >> choice;
+    int choice;
+    do {
+        menu();
+        if (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            continue;
+        }
 
-		switch (choice) {
-		case 1:
-			victim();
-			break;
-		case 2:
-			adminGateway();
-			break;
-		case 3:
-			cout << "Exiting system. Stay safe!" << endl;
-			break;
-		default:
-			cout << "Invalid option. Please try again." << endl;
-		}
+        switch (choice) {
+        case 1: victim(); break;
+        case 2: adminGateway(); break;
+        case 3: cout << "Exiting system. Stay safe!" << endl; break;
+        default: cout << "Invalid option." << endl;
+        }
+    } while (choice != 3);
 
-	} while (choice != 3);
-
-	return 0;
+    return 0;
 }
 
 void menu() {
-	cout << "\n======================================" << endl;
-	cout << "   FLOOD RELOCATION SYSTEM (MELAKA)   " << endl;
-	cout << "======================================" << endl;
-	cout << "1. Register as Flood Victim" << endl;
-	cout << "2. Administrator Login" << endl;
-	cout << "3. Exit" << endl;
-	cout << "Please choose your desired action: ";
+    cout << "\n======================================" << endl;
+    cout << "     FLOOD RELOCATION SYSTEM (MELAKA)  " << endl;
+    cout << "======================================" << endl;
+    cout << "1. Register as Flood Victim" << endl;
+    cout << "2. Administrator Login" << endl;
+    cout << "3. Exit" << endl;
+    cout << "Choice: ";
 }
 
-void victim()
-{
-	ifstream readMaster("all_location.txt");
-	if (!readMaster.is_open())
-	{
-		cout << "No location is available yet. Please wait for further notice" << endl;
-		return;
-	}
+// Logic: Load file using '|' delimiter to support spaces
+void victim() {
+    ifstream readMaster("all_location.txt");
+    if (!readMaster.is_open()) {
+        cout << "No locations found." << endl;
+        return;
+    }
 
-	string name;
-	int capacity, current;
-	int count = 0;
+    totalPPS = 0;
+    while (totalPPS < 100 && getline(readMaster, ppsList[totalPPS].name, '|')) {
+        readMaster >> ppsList[totalPPS].capacity;
+        readMaster >> ppsList[totalPPS].current;
+        readMaster.ignore(); // Skip newline
+        totalPPS++;
+    }
+    readMaster.close();
 
-	cout << "\n--- Available Relocation Centers ---\n";
-	while (readMaster >> name >> capacity >> current)
-	{
-		ppsname[count] = name; // store name in array
-		cout << count + 1 << ". " << name << " (Status: " << current << "/" << capacity << ")";
-		if (current == capacity)
-		{
-			cout << "[FULL]";
-		}
-		cout << endl;
-		count++;
-	}
-	readMaster.close();
-	//choice logic
-	int choice;
-	cout << "Please choose your desire Temporary relocation location or 0 to return to the previous menu : ";
-	cin >> choice;
-	if (cin.fail())
-	{
-		cin.clear();
-		cin.ignore(1000, '\n');
-		choice = 0;
-	}
-	if (choice == 0)
-		return;
-	int index = choice - 1; // match with array numbering
+    if (totalPPS == 0) {
+        cout << "No PPS registered yet." << endl;
+        return;
+    }
 
-	if (index < 0 || index >= count)
-	{
-		cout << "Invalid selection!" << endl;
-		return;
-	}
+    cout << "\n--- Available Centers ---\n";
+    for (int i = 0; i < totalPPS; i++) {
+        cout << i + 1 << ". " << ppsList[i].name
+            << " [" << ppsList[i].current << "/" << ppsList[i].capacity << "]";
+        if (ppsList[i].current >= ppsList[i].capacity) cout << " [FULL]";
+        cout << endl;
+    }
 
-	//register victim detail
-	string vicname, vicid;
-	cout << "Enter your Full name: ";
-	cin.ignore();
-	getline(cin, vicname);
-	cout << "Enter your IC number: ";
-	cin >> vicid;
+    int choice;
+    cout << "Please select a Temporary Relocation Center(0 to back): ";
+    cin >> choice;
+    if (choice <= 0 || choice > totalPPS) return;
 
-	ofstream ppsFile(ppsname[index] + ".txt", ios::app);
-	ppsFile << vicid << " " << vicname << endl;
-	ppsFile.close();
+    int idx = choice - 1;
+    if (ppsList[idx].current >= ppsList[idx].capacity) {
+        cout << "Center is full!" << endl;
+        return;
+    }
 
-	// --- UPDATE MASTER LIST COUNT ---
+    string vicname, vicid;
+    cout << "Please enter your full Name: ";
+    cin.ignore();
+    getline(cin, vicname);
+    cout << "PLease enter your IC Number: ";
+    cin >> vicid;
 
-	// 1. Read everything into temporary arrays
-	string tempNames[100];
-	int tempCap[100], tempCurrent[100];
-	int totalLines = 0;
+    ofstream ppsFile(ppsList[idx].name + ".txt", ios::app);
+    ppsFile << vicid << " " << vicname << endl;
+    ppsFile.close();
 
-	ifstream masterIn("all_location.txt");
-	while (masterIn >> tempNames[totalLines] >> tempCap[totalLines] >> tempCurrent[totalLines]) {
-		// 2. If this is the PPS the victim chose, increase the count
-		if (totalLines == index) {
-			tempCurrent[totalLines]++;
-		}
-		totalLines++;
-	}
-	masterIn.close();
-
-	// 3. Overwrite the master file with updated data
-	ofstream masterOut("all_location.txt", ios::out); // ios::out clears the file
-	for (int i = 0; i < totalLines; i++) {
-		masterOut << tempNames[i] << " " << tempCap[i] << " " << tempCurrent[i] << endl;
-	}
-	masterOut.close();
-
-	cout << "\nYou have successfully register. Please head to " << ppsname[index] << " for further instruction" << endl;
-
+    ppsList[idx].current++;
+    ofstream masterOut("all_location.txt");
+    for (int i = 0; i < totalPPS; i++) {
+        masterOut << ppsList[i].name << "|" << ppsList[i].capacity << " " << ppsList[i].current << endl;
+    }
+    masterOut.close();
+    cout << "Registration Successful. Please head to " << ppsList[idx].name <<" For further instruction." << endl;
 }
 
-void adminGateway()
-{
-	int choice;
-	cout << "--- ADMINISTRATOR ---" << endl;
-	cout << "1. Login " << endl;
-	cout << "2. Register " << endl;
-	cout << "3. Return to Main Menu" << endl;
-	cin >> choice;
+void adminGateway() {
+    int choice;
+    bool loggedIn = false;
 
-	
-	switch (choice)
-	{
-		case 1:
-			adminLogin();
-			break;
-		case 2:
-			adminRegistration();
-			break;
-		default:
-			cout << "Invalid option. Returning to main menu." << endl;
-			return;
-	}
-	
+    do {
+        cout << "\n--- ADMINISTRATOR GATEWAY ---" << endl;
+        cout << "1. Login\n2. Register\n3. Back to Main Menu\nChoice: ";
+        cin >> choice;
+
+        if (choice == 1) {
+            loggedIn = adminLogin(); // This calls your bool function
+            if (loggedIn) {
+                adminMenu(); // Go to menu if successful
+                break;       // Exit this loop after logging out of adminMenu
+            }
+            // If loggedIn is false, the loop naturally repeats
+        }
+        else if (choice == 2) {
+            adminRegistration();
+        }
+        else if (choice != 3) {
+            cout << "Invalid option." << endl;
+        }
+
+    } while (choice != 3);
 }
 
-void adminLogin()
-{
-	string fileUser, filePass;
-	string inputUser, inputPass;
-	bool found = false;
-	do {
-		cout << "\n--- ADMIN LOGIN ---" << endl;
-		cout << "Please enter your user id and password(enter 0 to return to the previous menu)" << endl;
-		cin >> inputUser >> inputPass;
-		if (inputUser == "0" || inputPass == "0")
-			return;
-		// 1. Open the file to READ
-		ifstream readFile("admin_account.txt");
+bool adminLogin() {
+    string u, p, iu, ip;
+    cout << "\n--- LOGIN ---" << endl;
+    cout << "Please enter your username and password" << endl;
+    cout << "Username: "; cin >> iu;
+    cout << "Password: "; cin >> ip;
 
-		if (readFile.is_open()) {
-			// 2. Loop through the file word by word
-			while (readFile >> fileUser >> filePass) {
-				if (fileUser == inputUser && filePass == inputPass) {
-					found = true;
-					break;
-				}
-			}
-			readFile.close();
-		}
-		else {
-			cout << "Error: File not found. Have you registered an admin yet?" << endl;
-		}
+    ifstream read("admin_account.txt");
+    while (read >> u >> p) {
+        if (u == iu && p == ip) {
+            return true;
+        }
+    }
+    read.close();
 
-		if (found) {
-
-			cout << "Login successful! Welcome back, Admin "<< inputUser << '!' << endl;
-			cout << endl;
-			adminMenu();
-		}
-		else {
-			cout << "Wrong username or password, Please try again" << endl;
-		}
-	} while (true);
+    // If we reach here, it means no match was found
+    cout << "\n[!] Wrong username or password. Please try again." << endl;
+    return false;
 }
 
-void adminRegistration()
-{
-
-	string newUser, newPass,Masterkey;
-	cout << "\n--- ADMIN REGISTRATION ---" << endl;
-	cout << "Please enter the Passcode you have receive from your Superior" << endl;
-	cin >> Masterkey;
-	if (Masterkey != "admin123")
-	{
-		cout << "Invalid Passcode! Returning to previous menu.\n";
-		return;
-	}
-	else
-	cout << "Please enter your desired user id : ";
-	cin >> newUser;
-	cout << "Please enter your desired password: ";
-	cin >> newPass;
-
-	ofstream masterList("admin_account.txt", ios::app);
-	if (masterList.is_open())
-	{
-		masterList << newUser << " " << newPass << endl;
-		cout << "Registration successful! You can now log in with your new credentials.\n";
-		cout << endl;
-		adminGateway();
-
-	}
-	else {
-		cout << "Error: Could not open master list file." << endl;
-	}
+void adminRegistration() {
+    string key, user, pass;
+    cout << "Please enter the passcode you have receive from your supervisor." << endl;
+    cout << "Passcode: "; cin >> key;
+    if (key != "admin123") return;
+    cout << "Please enter a username: "; cin >> user;
+    cout << "Please enter a password: "; cin >> pass;
+    ofstream write("admin_account.txt", ios::app);
+    write << user << " " << pass << endl;
+    cout << "Registration Successful. You may now login through the main menu.";
 }
 
-void adminMenu()
-{
-	int choice;
-	do {
-		cout << "\n--- ADMINISTRATOR MENU ---" << endl;
-		cout << "1. Add New Temporary Relocation Location" << endl;
-		cout << "2. View Summary Report" << endl;
-		cout << "3. View Victim List" << endl;
-		cout << "4. Search Victim by IC/Name" << endl;
-		cout << "5. Logout" << endl;
-		cout << "Please choose your desired action: ";
-		cin >> choice;
-		switch (choice)
-		{
-		case 1:
-			cout << endl;
-			addpps();
-			break;
-		case 2:
-			summary();
-			break;
-		case 3:
-			viewVictims();
-			break;
-		case 4:
-			searchVictim();
-			break;
-		case 5:
-			cout << "Logging out..." << endl;
-			main();
-		default:
-			cout << "Invalid option. Please try again." << endl;
-		}
-	} while (true);
+void adminMenu() {
+    int choice;
+    do {
+        cout << "\n--- ADMIN MENU ---\n1. Add new Temporary Relocation Center\n2. Summary\n3. View Victims List\n4. Search\n5. Logout\nChoice: ";
+        cin >> choice;
+        switch (choice) {
+        case 1: addpps(); break;
+        case 2: summary(); break;
+        case 3: viewVictims(); break;
+        case 4: searchVictim(); break;
+        }
+    } while (choice != 5);
 }
 
-void addpps()
-{
-	char choice;
-	do{
-		string ppsName;
-		int capacity, current = 0;
-		cout << "Please enter the name of the new temporary relocation location(use '_' for spaces):";
-		cin >> ppsName;
-		cout << "Enter the maximum capacity of the new temporary relocation location:";
-		cin >> capacity;
-		cout << endl;
+void addpps() {
+    char choice = 0;
+    do{
+        string ppsName;
+        int capacity;
+        cin.ignore(1000, '\n');
+		cout << "\n--- ADD NEW TEMPORARY RELOCATION CENTER ---" << endl;
+		cout << "- enter 0 at any time to return to the previous menu. -\n" << endl;
+        cout << "Please enter the new temporary relocation center name : ";
+        getline(cin, ppsName);
+        if (ppsName == "0")
+            return;
+        cout << "enter the maximum occupation capacity for the new temporary relocation center: ";
+        cin >> capacity;
+        if (capacity == 0)
+            return;
 
-		ofstream indfile(ppsName + ".txt");
-		indfile.close();
+        ofstream masterList("all_location.txt", ios::app);
+        masterList << ppsName << "|" << capacity << " 0" << endl;
+        masterList.close();
 
-		ofstream masterList("all_location.txt", ios::app);
-		if (masterList.is_open())
-		{
-			masterList << ppsName << " " << capacity << " " << current << endl;
-			cout << endl;
-			cout << "Registration succcessfull! " << ppsName << " is now active. ";
-			cout << endl;
-			cout << "Would you like to add another Temporary Relocation Center? ";
+        ofstream indfile(ppsName + ".txt"); // Create victim file
+        indfile.close();
+        cout << "New temporary relocation center have been successfully added.";
+        cout << "Press Y to continue adding Temporary relocation center, N to return to the previous menu.\n";
 
-
-		}
-		else {
-			cout << "Error: Could not open master list file." << endl;
-		}
-		cout << "Type Y to continue and N to return to the main menu : ";
-		cin >> choice;
-	} while (choice == 'Y' || choice == 'y');
-	return;
+    } while (choice == 'Y' || choice == 'y');
+    cout << endl;
+    return;
 }
 
-void summary()
-{
-	ifstream master("all_location.txt");
+void summary() {
+    ifstream master("all_location.txt");
 
-	if (!master.is_open())
-	{
-		cout << "No PPS data available." << endl;
-		return;
-	}
+    if (!master.is_open()) {
+        cout << "Error: Could not open all_location.txt" << endl;
+        return;
+    }
 
-	string name;
-	int capacity, current;
+    string name;
+    int capacity, current;
+    int totalPPS = 0, totalCapacity = 0, totalVictims = 0;
 
-	int totalPPS = 0;
-	int totalCapacity = 0;
-	int totalVictims = 0;
+    // Header
+    cout << "\n==================== PPS SUMMARY REPORT ====================\n";
+    cout << left << setw(5) << "No."
+        << setw(25) << "PPS Name"
+        << setw(15) << "Occupancy"
+        << "Status" << endl;
+    cout << string(60, '-') << endl;
 
-	cout << "\n====== PPS SUMMARY REPORT ======\n";
-	cout << left << setw(5) << "No."
-		<< setw(20) << "PPS Name"
-		<< setw(15) << "Occupancy"
-		<< "Status" << endl;
-	cout << "-------------------------------------------------------\n";
+    // Combined Logic: Use getline to handle spaces in names
+    while (getline(master, name, '|')) {
+        if (!(master >> capacity >> current)) break;
+        master.ignore(); // Clean up the newline after numbers
 
-	while (master >> name >> capacity >> current)
-	{
-		totalPPS++;
-		totalCapacity += capacity;
-		totalVictims += current;
+        totalPPS++;
+        totalCapacity += capacity;
+        totalVictims += current;
 
-		int percentage = (current * 100) / capacity;
+        // Calculate percentage for status logic
+        double percentage = (capacity > 0) ? (static_cast<double>(current) / capacity) * 100 : 0;
+        string occString = to_string(current) + "/" + to_string(capacity);
 
-		cout << left << setw(5) << totalPPS
-			<< setw(20) << name
-			<< setw(15) << (to_string(current) + "/" + to_string(capacity));
+        // Print Row
+        cout << left << setw(5) << totalPPS
+            << setw(25) << name
+            << setw(15) << occString;
 
-		// Warning logic
-		if (current == capacity)
-		{
-			cout << "[FULL]";
-		}
-		else if (percentage >= 80)
-		{
-			cout << "[WARNING: Almost Full]";
-		}
-		else {
-			cout << "[AVAILABLE]";
-		}
+        // Status Logic
+        if (current >= capacity) {
+            cout << "[FULL]";
+        }
+        else if (percentage >= 80) {
+            cout << "[WARNING: Almost Full]";
+        }
+        else {
+            cout << "[AVAILABLE]";
+        }
+        cout << endl;
+    }
 
-		cout << endl;
-	}
+    master.close();
 
-	master.close();
-
-	cout << "\n-------------------------------------------------------\n";
-	cout << "Total PPS Locations   : " << totalPPS << endl;
-	cout << "Total Victims         : " << totalVictims << endl;
-	cout << "Total Capacity        : " << totalCapacity << endl;
-	cout << "Available Spaces Left : "
-		<< (totalCapacity - totalVictims) << endl;
-	cout << "=======================================================\n";
+    // Footer with Totals
+    cout << string(60, '-') << endl;
+    cout << "Total PPS Locations   : " << totalPPS << endl;
+    cout << "Total Victims         : " << totalVictims << endl;
+    cout << "Total Capacity        : " << totalCapacity << endl;
+    cout << "Available Spaces Left : " << (totalCapacity - totalVictims) << endl;
+    cout << "============================================================\n";
 }
 
-void viewVictims()
-{
-	char repeat;
+void viewVictims() {
+    ifstream readMaster("all_location.txt");
+    if (!readMaster.is_open()) {
+        cout << "\n[Error: Could not load PPS list]\n";
+        return;
+    }
 
-	do {
-		ifstream readMaster("all_location.txt");
-		if (!readMaster.is_open())
-		{
-			cout << "\n[!] No PPS data available." << endl;
-			return;
-		}
+    string names[100];
+    int count = 0;
+    string tempName;
 
-		vector<Center> centers;
-		string name;
-		int cap, curr;
-		int count = 0;
+    cout << "\n========================================";
+    cout << "\n       SELECT PPS TO VIEW VICTIMS       ";
+    cout << "\n========================================\n";
 
-		cout << "\n--- SELECT PPS TO VIEW ---" << endl;
-		while (readMaster >> name >> cap >> curr)
-		{
-			Center c;
-			c.name = name;
-			c.capacity = cap;
-			c.current = curr;
-			centers.push_back(c);
-			cout << count + 1 << ". " << name << endl;
-			count++;
-		}
-		readMaster.close();
+    // Read and display PPS list
+    while (count < 100 && getline(readMaster, tempName, '|')) {
+        names[count] = tempName;
+        int d1, d2;
+        readMaster >> d1 >> d2;
+        readMaster.ignore();
 
-		if (count == 0) {
-			cout << "No centers found." << endl;
-			return;
-		}
+        cout << left << setw(4) << to_string(count + 1) + "."
+            << names[count] << endl;
+        count++;
+    }
+    readMaster.close();
 
-		int choice;
-		cout << "Select PPS number(or 0 to go back to the previous menu): ";
-		cin >> choice;
-		if (choice == 0)//go back to previous menu
-			return;
-		if (cin.fail())
-		{
-			cin.clear();
-			cin.ignore(1000, '\n');
-			choice = 0;
-		}
-		int index = choice - 1;
+    if (count == 0) {
+        cout << "No PPS locations found.\n";
+        return;
+    }
 
-		if (index < 0 || index >= count)
-		{
-			cout << "[!] Invalid selection!" << endl;
-		}
-		else
-		{
-			string filename = centers[index].name + ".txt";
-			ifstream ppsFile(filename);
+    int choice;
+    cout << "\n----------------------------------------";
+    cout << "\nSelect (0 to go back): ";
+    cin >> choice;
 
-			if (!ppsFile.is_open())
-			{
-				cout << "\n------------------------------------------------------------" << endl;
-				cout << " PPS: " << centers[index].name;
-				cout << " [Occupancy: " << centers[index].current << "/" << centers[index].capacity << "]" << endl;
-				cout << "------------------------------------------------------------" << endl;
-				cout << "[!] No victims registered here yet." << endl;
-			}
-			else
-			{
-				string vicIC, vicName;
+    if (choice == 0) return;
 
-				cout << "\n------------------------------------------------------------" << endl;
-				cout << " PPS: " << centers[index].name;
-				cout << " [Occupancy: " << centers[index].current << "/" << centers[index].capacity << "]" << endl;
-				cout << "------------------------------------------------------------" << endl;
-				cout << left << setw(5) << "No." << setw(20) << "IC Number" << "Name" << endl;
-				cout << "------------------------------------------------------------" << endl;
+    if (choice > 0 && choice <= count) {
+        string fileName = names[choice - 1] + ".txt";
+        ifstream file(fileName);
 
-				int vCount = 0;
+        cout << "\nListing victims for: " << names[choice - 1] << endl;
 
-				while (ppsFile >> vicIC)
-				{
-					getline(ppsFile, vicName);
+        if (!file.is_open()) {
+            cout << "[No victim records found for this location.]" << endl;
+        }
+        else {
+            // Table Header for Victim List
+            cout << "\n" << setfill('-') << setw(45) << "-" << setfill(' ') << endl;
+            cout << left << setw(15) << "IC Number" << "| " << "Victim Name" << endl;
+            cout << setfill('-') << setw(45) << "-" << setfill(' ') << endl;
 
-					vCount++;
-					cout << left << setw(5) << vCount
-						<< setw(20) << vicIC
-						<< vicName << endl;
-				}
-
-				if (vCount == 0) {
-					cout << "   (No victims found in this list)" << endl;
-				}
-
-				cout << "------------------------------------------------------------" << endl;
-				ppsFile.close();
-			}
-		}
-
-
-		cout << "\nDo you want to view another PPS record? (Y for yes, any key to return to previous menu): ";
-		cin >> repeat;
-		if (cin.fail())
-		{
-			cin.clear();
-			cin.ignore(1000, '\n');
-			choice = 0;
-		}
-
-	} while (repeat == 'y' || repeat == 'Y');
+            string ic, vname;
+            while (file >> ic >> ws && getline(file, vname)) {
+                cout << left << setw(15) << ic << "| " << vname << endl;
+            }
+            cout << setfill('-') << setw(45) << "-" << setfill(' ') << endl;
+            file.close();
+        }
+    }
+    else {
+        cout << "\n[Invalid Selection]\n";
+    }
 }
 
-void searchVictim()
-{
-	string target;
-	cout << "\n--- SEARCHING VICTIM ---" << endl;
-	cout << "Enter Victim IC Number" << endl;
-	cout << "Enter 0 to return to previous menu.";
-	cout << "\nInput: ";
-	cin >> target;
-	if (target == "0")
-		return;
+void searchVictim() {
+    string target;
+    cout << "Please enter the name or IC number of the person you wish to search for : "; cin >> target;
+    ifstream master("all_location.txt");
+    string pps; int c, cu;
+    bool found = false;
 
-	ifstream masterFile("all_location.txt");
-	if (!masterFile.is_open()) {
-		cout << "Error: No data available to search." << endl;
-		return;
-	}
-
-	string ppsName;
-	int cap, curr;
-	bool found = false;
-
-	// LOOP 1: Read the Master List to get PPS names
-	while (masterFile >> ppsName >> cap >> curr)
-	{
-		// Construct filename 
-		ifstream ppsFile(ppsName + ".txt");
-
-		string fileIC, fileName;
-
-		// LOOP 2: Read inside the specific PPS file
-		while (ppsFile >> fileIC)
-		{
-			// using getline for name because full name have spaces
-			getline(ppsFile, fileName);
-
-			// CHECK MATCH: Compare IC OR check if Name contains the target string
-			// adding a space to fileName check because getline grabs the leading space
-			if (fileIC == target || fileName.find(target) != string::npos)
-			{
-				cout << "\n[RECORD FOUND]" << endl;
-				cout << "Name    : " << fileName << endl;
-				cout << "IC No   : " << fileIC << endl;
-				cout << "Location: " << ppsName << endl;
-				found = true;
-			}
-		}
-		ppsFile.close();
-	}
-	masterFile.close();
-
-	if (!found) {
-		cout << "\n[RESULT] No victim found with IC/Name: " << target << endl;
-	}
+    // FIXED: Must use getline with '|' here too
+    while (getline(master, pps, '|')) {
+        master >> c >> cu;
+        master.ignore();
+        ifstream file(pps + ".txt");
+        string ic, vname;
+        while (file >> ic >> ws && getline(file, vname)) {
+            if (ic == target || vname.find(target) != string::npos) {
+                cout << "Match: " << vname << " can be found at " << pps << endl;
+                found = true;
+            }
+        }
+        file.close();
+    }
+    if (!found) cout << "THe person you are searching for is not in our system.\n";
 }

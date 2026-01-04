@@ -1,0 +1,14 @@
+﻿'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Users\User\source\repos\IMPROVED FLOOD-VICTIM-RELOCATION-SYSTEM\x64\Debug\FLOOD VICTIM RELOCATION SYSTEM.exe'. Symbols loaded.
+'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Windows\System32\ntdll.dll'. Symbol loading disabled by Include/Exclude setting.
+'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Windows\System32\kernel32.dll'. Symbol loading disabled by Include/Exclude setting.
+'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Windows\System32\KernelBase.dll'. Symbol loading disabled by Include/Exclude setting.
+'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Windows\System32\msvcp140d.dll'. Symbol loading disabled by Include/Exclude setting.
+'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Windows\System32\vcruntime140d.dll'. Symbol loading disabled by Include/Exclude setting.
+'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Windows\System32\vcruntime140_1d.dll'. Symbol loading disabled by Include/Exclude setting.
+'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Windows\System32\ucrtbased.dll'. Symbol loading disabled by Include/Exclude setting.
+The thread 29768 has exited with code 0 (0x0).
+'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Windows\System32\kernel.appcore.dll'. Symbol loading disabled by Include/Exclude setting.
+'FLOOD VICTIM RELOCATION SYSTEM.exe' (Win32): Loaded 'C:\Windows\System32\msvcrt.dll'. Symbol loading disabled by Include/Exclude setting.
+The thread 25620 has exited with code 0 (0x0).
+The thread 21104 has exited with code 0 (0x0).
+The program '[22052] FLOOD VICTIM RELOCATION SYSTEM.exe' has exited with code 0 (0x0).
