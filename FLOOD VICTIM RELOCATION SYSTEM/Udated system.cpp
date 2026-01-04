@@ -33,15 +33,19 @@ int main() {
 
 		switch (choice) {
 		case 1:
+			cout << endl;
 			victim();
 			break;
 		case 2:
+			cout << endl;
 			adminGateway();
 			break;
 		case 3:
+			cout << endl;
 			cout << "Exiting system. Stay safe!" << endl;
 			break;
 		default:
+			cout << endl;
 			cout << "Invalid option. Please try again." << endl;
 		}
 
@@ -65,7 +69,8 @@ void victim()
 	ifstream readMaster("all_location.txt");
 	if (!readMaster.is_open())
 	{
-		cout << "No location is available yet. Please wait for further notice" << endl;
+		cout << endl;
+		cout << "No location is available yet. Please wait until further notice" << endl;
 		return;
 	}
 
@@ -74,8 +79,12 @@ void victim()
 	int count = 0;
 
 	cout << "\n--- Available Relocation Centers ---\n";
-	while (readMaster >> name >> capacity >> current)
+	while (getline(readMaster, name,','))
 	{
+		readMaster >> capacity;
+		readMaster >> current;
+		readMaster.ignore(); // to skip the newline character after reading integers
+
 		ppsname[count] = name; // store name in array
 		cout << count + 1 << ". " << name << " (Status: " << current << "/" << capacity << ")";
 		if (current == capacity)
@@ -126,7 +135,9 @@ void victim()
 	int totalLines = 0;
 
 	ifstream masterIn("all_location.txt");
-	while (masterIn >> tempNames[totalLines] >> tempCap[totalLines] >> tempCurrent[totalLines]) {
+	while (getline(masterIn, tempNames[totalLines], ',')) {
+		masterIn >> tempCap[totalLines];
+		masterIn >> tempCurrent[totalLines];
 		// 2. If this is the PPS the victim chose, increase the count
 		if (totalLines == index) {
 			tempCurrent[totalLines]++;
@@ -138,7 +149,8 @@ void victim()
 	// 3. Overwrite the master file with updated data
 	ofstream masterOut("all_location.txt", ios::out); // ios::out clears the file
 	for (int i = 0; i < totalLines; i++) {
-		masterOut << tempNames[i] << " " << tempCap[i] << " " << tempCurrent[i] << endl;
+		masterOut << tempNames[i] << "," << tempCap[i] << " " << tempCurrent[i] << endl;
+
 	}
 	masterOut.close();
 
@@ -153,21 +165,27 @@ void adminGateway()
 	cout << "1. Login " << endl;
 	cout << "2. Register " << endl;
 	cout << "3. Return to Main Menu" << endl;
+	cout << endl;
+	cout << "Please choose your desired action: ";
 	cin >> choice;
 
 	
-	switch (choice)
-	{
+	do{
+		switch (choice)
+		{
 		case 1:
 			adminLogin();
 			break;
 		case 2:
 			adminRegistration();
 			break;
+		case 3:
+			cout << "Returning to main menu..." << endl;
 		default:
-			cout << "Invalid option. Returning to main menu." << endl;
+			cout << "Invalid option." << endl;
 			return;
-	}
+		}
+	} while (choice != 3);
 	
 }
 
@@ -225,15 +243,17 @@ void adminRegistration()
 	}
 	else
 	cout << "Please enter your desired user id : ";
-	cin >> newUser;
-	cout << "Please enter your desired password: ";
+	getline(cin, newUser);
+
+	cout << "Please enter your desired password(no spaces): ";
 	cin >> newPass;
 
 	ofstream masterList("admin_account.txt", ios::app);
 	if (masterList.is_open())
 	{
 		masterList << newUser << " " << newPass << endl;
-		cout << "Registration successful! You can now log in with your new credentials.\n";
+		cout << endl;
+		cout << "Registration successful! Please return to the previous menu and login using the username and password you have entered.\n";
 		cout << endl;
 		adminGateway();
 
@@ -251,7 +271,7 @@ void adminMenu()
 		cout << "1. Add New Temporary Relocation Location" << endl;
 		cout << "2. View Summary Report" << endl;
 		cout << "3. View Victim List" << endl;
-		cout << "4. Search Victim by IC/Name" << endl;
+		cout << "4. Search Victim by IC" << endl;
 		cout << "5. Logout" << endl;
 		cout << "Please choose your desired action: ";
 		cin >> choice;
@@ -286,7 +306,8 @@ void addpps()
 		string ppsName;
 		int capacity, current = 0;
 		cout << "Please enter the name of the new temporary relocation location(use '_' for spaces):";
-		cin >> ppsName;
+		cin.ignore();
+		getline(cin, ppsName);
 		cout << "Enter the maximum capacity of the new temporary relocation location:";
 		cin >> capacity;
 		cout << endl;
@@ -297,7 +318,7 @@ void addpps()
 		ofstream masterList("all_location.txt", ios::app);
 		if (masterList.is_open())
 		{
-			masterList << ppsName << " " << capacity << " " << current << endl;
+			masterList << ppsName << "," << capacity << " " << current << endl;
 			cout << endl;
 			cout << "Registration succcessfull! " << ppsName << " is now active. ";
 			cout << endl;
@@ -338,8 +359,11 @@ void summary()
 		<< "Status" << endl;
 	cout << "-------------------------------------------------------\n";
 
-	while (master >> name >> capacity >> current)
+	while (getline(master,name,','))
 	{
+		master >> capacity;
+		master >> current;
+		master.ignore(); // to skip the newline character after reading integers
 		totalPPS++;
 		totalCapacity += capacity;
 		totalVictims += current;
@@ -348,7 +372,7 @@ void summary()
 
 		cout << left << setw(5) << totalPPS
 			<< setw(20) << name
-			<< setw(15) << (to_string(current) + "/" + to_string(capacity));
+			<< setw(15) << " " << (to_string(current) + "/" + to_string(capacity));
 
 		// Warning logic
 		if (current == capacity)
@@ -475,7 +499,7 @@ void viewVictims()
 		}
 
 
-		cout << "\nDo you want to view another PPS record? (Y for yes, any key to return to previous menu): ";
+		cout << "\nDo you want to view another PPS record? (Y for yes, N to return to previous menu): ";
 		cin >> repeat;
 		if (cin.fail())
 		{
