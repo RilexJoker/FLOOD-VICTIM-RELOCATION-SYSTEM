@@ -298,16 +298,15 @@ void viewVictims() {
     cout << "\n       SELECT PPS TO VIEW VICTIMS       ";
     cout << "\n========================================\n";
 
-    // Read and display PPS list
     while (count < 100 && getline(readMaster, tempName, '|')) {
-        names[count] = tempName;
         int d1, d2;
-        readMaster >> d1 >> d2;
-        readMaster.ignore();
-
-        cout << left << setw(4) << to_string(count + 1) + "."
-            << names[count] << endl;
-        count++;
+        if (readMaster >> d1 >> d2) {
+            readMaster.ignore();
+            names[count] = tempName;
+            cout << left << setw(4) << to_string(count + 1) + "."
+                 << names[count] << endl;
+            count++;
+        }
     }
     readMaster.close();
 
@@ -316,39 +315,27 @@ void viewVictims() {
         return;
     }
 
-    int choice;
-    cout << "\n----------------------------------------";
-    cout << "\nSelect (0 to go back): ";
-    cin >> choice;
+    char userChoice;
+    do {
+        int selection;
+        cout << "\nEnter PPS number to view victims: ";
 
-    if (choice == 0) return;
-
-    if (choice > 0 && choice <= count) {
-        string fileName = names[choice - 1] + ".txt";
-        ifstream file(fileName);
-
-        cout << "\nListing victims for: " << names[choice - 1] << endl;
-
-        if (!file.is_open()) {
-            cout << "[No victim records found for this location.]" << endl;
+        while (!(cin >> selection) || selection < 1 || selection > count) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid selection. Please enter a number between 1 and " << count << ": ";
         }
-        else {
-            // Table Header for Victim List
-            cout << "\n" << setfill('-') << setw(45) << "-" << setfill(' ') << endl;
-            cout << left << setw(15) << "IC Number" << "| " << "Victim Name" << endl;
-            cout << setfill('-') << setw(45) << "-" << setfill(' ') << endl;
 
-            string ic, vname;
-            while (file >> ic >> ws && getline(file, vname)) {
-                cout << left << setw(15) << ic << "| " << vname << endl;
-            }
-            cout << setfill('-') << setw(45) << "-" << setfill(' ') << endl;
-            file.close();
-        }
-    }
-    else {
-        cout << "\n[Invalid Selection]\n";
-    }
+        cout << "\n----------------------------------------";
+        cout << "\n[Displaying victims for: " << names[selection - 1] << "]"; 
+        cout << "\n----------------------------------------\n";
+
+        cout << "\nPress 'y' to see other PPS or any key to back to previous menu: ";
+        cin >> userChoice;
+
+    } while (userChoice == 'y' || userChoice == 'Y');
+}
+
 }
 
 void searchVictim() {
